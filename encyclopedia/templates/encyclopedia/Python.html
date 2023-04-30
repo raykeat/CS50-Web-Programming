@@ -1,0 +1,12 @@
+{% extends "encyclopedia/layout.html" %}
+
+{% block title %}
+    {{title}}
+{% endblock %}
+
+{% block body %}
+<h1>{{convertedcontent|safe}}</h1>
+
+<a href = "{% url 'editmdcontent' title=title%}">Edit Entry's Markdown Content</a>
+
+{% endblock %}
