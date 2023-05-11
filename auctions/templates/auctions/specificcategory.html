@@ -1,0 +1,32 @@
+{% extends "auctions/layout.html" %}
+
+{% block body %}
+    <h2>Products under "{{category}}" category</h2>
+        
+    
+        {% for product in listofproducts %}
+
+        <!--style="cursor:pointer" ensures that the div is clickable-->
+        <div style="cursor: pointer" id ="div1" class="container">
+            <div class="row">
+              <div class="col-md-4">
+                <img src="{{product.imageurl}}" alt="{{product.title}}" width="300" height="300">
+              </div>
+              <div class="col-md-8" style="margin-top: 30px;">
+                <h5>{{product.title}}</h5>
+                {% if product.highest_bid %}
+                <h6>Current Price:  {{product.highest_bid}}</h6>
+                {% else %}
+                <h6>Current Price:  {{product.startingbid}}</h6>
+                {% endif %}
+                <h6>Description:  {{product.description}}</h6>
+                <a href="{% url 'specificlisting' id=product.id %}">View More</a>
+              </div>
+            </div>
+          </div>
+        
+       
+        {% endfor %}
+
+    
+{% endblock %}

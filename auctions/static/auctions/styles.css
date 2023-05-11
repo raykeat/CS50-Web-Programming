@@ -1,0 +1,32 @@
+body {
+    padding: 10px;
+}
+
+h3,h5,h6{
+    margin-bottom:20px;
+}
+
+#div1{
+    border-width: 2px;
+    border-color:bisque ;
+    border-style: solid;
+    margin:30px;
+}
+
+#textfield{
+    position:absolute;
+    margin-top:300px !important;
+}
+
+#inputfieldbid{
+    width: 100%;
+    margin-bottom: 10px;
+    height:40px;
+}
+
+#comment{
+    margin:60px;
+}
+
+
+
