@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Coloured buttons</title>
+        <script>
+            document.addEventListener('DOMContentLoaded', ()=>{
+
+                //for each of the queries, run a function which changes colour 
+                //of text when button is clicked
+                document.querySelectorAll('button').forEach(function(button){
+                    button.onclick = ()=>{
+                        document.querySelector('#hello').style.colour = button.dataset.colour;
+                    }
+                });
+                
+            });
+            
+        </script>
+    </head>
+    <body>
+        <h1 id="hello">Hello!</h1>
+        <button data-color="red">Red</button>
+        <button data-color="black">Black</button>
+        <button data-color="blue">Blue</button>
+        
+    </body>
+</html>
