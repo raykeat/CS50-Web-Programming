@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta name="viewport" content="initial-scale=1, width=device-width">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+        <title>Advanced Search</title>
+        <link rel="stylesheet" href = "styles.css">
+        <script src="script.js"> </script>
+    </head>
+    <body>
+        <h1>Google Advanced Search</h1>
+        <hr></hr>
+        <h4>Find pages with...</h4>
+
+        <form action="https://www.google.com/search">
+            <div>
+                <label>all these words:</label>
+                <input id="all" type="text" name="q">
+            </div>
+            <div>
+                <label>this exact word or phrase:</label>
+                <input id="this" type="text" name="as_epq">
+            </div>
+            <div>
+                <label>any of these words:</label>
+                <input id="any" type="text" name="as_oq">
+            </div>
+            <div>
+                <label>none of these words:</label>
+                <input id="none" type="text" name="as_eq">
+            </div>
+
+            <button class="btn btn-primary" class="btn btn-success btn-lg" id="advancedsearch" onclick= "advancedsearch1();
+            advancedsearch2();
+            advancedsearch3();
+            advancedsearch4()">Google Advanced Search</button>
+
+
+        </form>
+        <a id="a3" href = "index.html">
+            Google Search
+        </a>
+    </body>

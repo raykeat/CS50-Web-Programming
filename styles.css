@@ -1,0 +1,139 @@
+@media (min-width:600px) {
+    body{
+        background-color: white;
+
+    }
+}
+
+@media (max-width:599px) {
+    body{
+        background-color: blue;
+
+    }
+}
+
+form{
+    margin: 0;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    -ms-transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%);
+    display: flex;
+    padding: 10px 20px;
+    flex-wrap:wrap;
+
+}
+
+input{
+    border-radius: 5px;
+    border: 1px solid #000;
+    font-size: 10;
+    cursor: pointer;
+}
+
+#magnifyingglass{
+    position:absolute;
+    top:45px;
+    left:60px;
+
+}
+
+#searchinput{
+    border-radius: 20px;
+    width: 100%;
+    padding: 12px 20px;
+    margin: 20px;
+}
+
+#second{
+    position: relative;
+    left:25px;
+    border-radius: 10px;
+    padding:5px 5px;
+}
+
+#third{
+    position:absolute;
+    right:40px;
+    bottom:10px;
+    border-radius:10px;
+    padding: 5px 5px;
+}
+
+#imagesearch{
+    position:relative;
+    top: 50%;
+    left: 50%;
+    -ms-transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%);
+    display: flex;
+    margin:10px;
+    border-radius:10px;
+    padding: 5px 5px;
+}
+
+#a1,#a3{
+    position:absolute;
+    top:50px;
+    right:20px;
+}
+
+#a2{
+    position:absolute;
+    top:50px;
+    right: 140px;
+}
+
+img{
+    width: 30%;
+    margin: auto;
+    display: block;
+    position: relative;
+    top:20px;
+}
+
+div>button{
+    text-align:left;
+    position: absolute;
+    top: 10px;
+    border-radius:10px;
+    font-size:16px;
+    padding: 5px 10px;
+    margin:5px;
+    border:5px;
+}
+
+#button1{
+    position: absolute;
+    left:10px;
+}
+
+#button2{
+    position: absolute;
+    left:80px;
+}
+
+li{
+    list-style-type: none;
+}
+
+h1,h4,li{
+    margin:10px;
+}
+
+label {
+    display: inline-block;
+    width: 200px;
+  }
+
+#all,#this,#any,#none{
+    padding: 10px 30px;
+    margin: 5px;
+}
+
+#advancedsearch{
+    position:relative;
+    bottom: -20px;
+    right: -230px;
+}
