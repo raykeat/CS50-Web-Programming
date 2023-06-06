@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>counter</title>
+    </head>
+    <body>
+        <h1>0</h1>
+        <button id="increase">Increase</button>
+        <button id="decrease">Decrease</button>
+        <script>
+
+            h1 = document.querySelector('h1')
+            document.querySelectorAll('button').forEach(button =>{
+                button.onclick = function(){
+                    if (button.innerHTML==="Increase"){
+                        h1.innerHTML = parseInt(h1.innerHTML)+1;
+                    } else {
+                        h1.innerHTML = parseInt(h1.innerHTML)-1;
+                    }
+                }
+                
+            })
+        </script>
+
+    </body>
+</html>
