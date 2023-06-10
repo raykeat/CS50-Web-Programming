@@ -1,0 +1,63 @@
+{% extends "network/layout.html" %}
+
+{% block body %}
+    <h1>All Posts</h1>
+    <div id="div1" class="flex-container">
+        <h3>New Post &#128512;</h3>
+        <form action="{% url 'index'%}" method="POST" id="form1">
+            {% csrf_token %}
+            <textarea rows="4" cols="180" name="newpostcontent" placeholder="Please type post content here"></textarea>
+            <input value="Post" type="submit" class="btn btn-primary">
+        </form>
+    </div>
+
+    {% for post in posts %}
+    <div id="div1">
+        <a id="userprofile" href="{% url 'profile' username=post.username.username %}">{{post.username}}</a>
+        {% if user == post.username%}
+        <a onclick="editpost(event)" id="editpage" data-edit-id="{{post.id}}">Edit</a>
+        {% endif %}
+        <h4>{{post.content}}</h4>
+        <h4>{{post.submissiontime}}</h4>
+        <h4 id="likes-{{post.id}}"> &#10084 {{post.likecount}}</h4>
+
+        
+        {% if not user in post.users_who_liked.all %}
+        <button id="like-{{post.id}}" onclick="like('{{post.id}}','{{user.id}}')" class="btn btn-dark">Like</button>
+        {% else %}
+        <button id="unlike-{{post.id}}" onclick="unlike('{{post.id}}','{{user.id}}')" class="btn btn-dark">Unlike</button>
+        {% endif %}
+        
+        
+        
+    </div>
+
+    {% if user == post.username%}
+    <div class="editdiv2" id="editdiv2-{{post.id}}">
+        <a id="userprofile" href="{% url 'profile' username=user.username %}">{{post.username}}</a>
+        <form onsubmit="updatepost(event,'{{post.id}}','{{ csrf_token }}')" id="form2">
+            {% csrf_token %}
+            <textarea rows="4" cols="180" name="editpostcontent" placeholder="Edit Post Content"></textarea>
+            <input value="Save" type="submit" class="btn btn-primary">
+        </form>
+        <h4>{{post.submissiontime}}</h4>
+        <h4> &#10084 {{post.likecount}}</h4>
+
+    </div>
+    {% endif %}
+
+    {% endfor %}
+
+    <nav aria-label="Page navigation example" style="display: flex; justify-content: center;">
+        <ul class="pagination">
+        {% if posts.has_previous %}
+          <li class="page-item"><a class="page-link" href="?page={{posts.previous_page_number}}">Previous</a></li>
+        {% endif %}
+
+        {% if posts.has_next %}
+          <li class="page-item"><a class="page-link" href="?page={{posts.next_page_number}}">Next</a></li>
+        {% endif %}
+        </ul>
+    </nav>
+    
+{% endblock %}

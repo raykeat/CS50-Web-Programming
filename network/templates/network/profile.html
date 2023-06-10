@@ -1,0 +1,148 @@
+{% extends "network/layout.html" %}
+
+{% block body %}
+    <script>
+        //Get the CSRF token from the cookie
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    // checking if cookie string begins with name we want,,
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+    function followuser(currentuser,userprofile){
+        const csrftoken = getCookie('csrftoken');
+        //Send AJAX request to follow user
+        $.ajax({
+        type: "POST",
+        url: "/followuser/" + currentuser + "/" + userprofile + "/",
+        //include CSRF token in request headers
+        headers: { "X-CSRFToken": csrftoken }, 
+        data: {
+            'currentuser': currentuser,
+            'userprofile': userprofile,
+            'action': 'follow'
+        },
+        success: function (response) {
+            //showing and hiding buttons after successful follow
+            $('#follow').hide();
+            $('#unfollow').show();
+            $('#followmessage').show();
+            $('#unfollowmessage').hide();
+            $('#followercount').text("Followers: "+ response.followers);
+            console.log('success');
+        
+        },
+        error: function (response) {
+            console.log(response);
+        }
+        });
+        }
+
+    function unfollowuser(currentuser,userprofile){
+        const csrftoken = getCookie('csrftoken');
+        //Send AJAX request to follow user
+        $.ajax({
+        type: "POST",
+        url: "/unfollowuser/" + currentuser + "/" + userprofile + "/",
+        headers: { "X-CSRFToken": csrftoken }, 
+        data: {
+            'currentuser': currentuser,
+            'userprofile': userprofile,
+            'action': 'unfollow'
+        },
+        success: function (response) {
+            
+            $('#follow').show();
+            $('#unfollow').hide();
+            $('#followmessage').hide();
+            $('#unfollowmessage').show();
+            $('#followercount').text("Followers: "+response.followers);
+            console.log('success');
+            
+        },
+        error: function (response) {
+            console.log(response);
+        }
+
+        });
+    }
+
+
+    
+    </script>
+    <h1>{{userprofile}}'s Profile Page</h1>
+
+    <h2 id="followercount">Followers: {{followers}}</h2>
+    <h2>Following: {{following}}</h2>
+
+    
+    <!--if current user is not profile page's user-->
+    {% if user.username != userprofile %}
+        {% if is_follower %}
+            <button class="btn btn-dark" id="unfollow" onclick="unfollowuser('{{user.username}}','{{userprofile}}')">Unfollow</button>
+        {% else %}
+            <button class="btn btn-dark" id="follow" onclick="followuser('{{user.username}}','{{userprofile}}')">Follow</button>
+        {% endif %}
+        <h6 id="followmessage">Following {{userprofile}}</h6>
+        <h6 id="unfollowmessage">Unfollowed {{userprofile}}</h6>
+    {% endif %}
+    
+    {% for post in posts %}
+    <div id="div1">
+        <a id="userprofile" href="{% url 'profile' username=post.username.username %}">{{post.username}}</a>
+        {% if user == post.username%}
+        <a onclick="editpost(event)" id="editpage" data-edit-id="{{post.id}}">Edit</a>
+        {% endif %}
+        <h4>{{post.content}}</h4>
+        <h4>{{post.submissiontime}}</h4>
+        <h4 id="likes-{{post.id}}"> &#10084 {{post.likecount}}</h4>
+
+       
+        {% if not user in post.users_who_liked.all %}
+        <button id="like-{{post.id}}" onclick="like('{{post.id}}','{{user.id}}')" class="btn btn-dark">Like</button>
+        {% else %}
+        <button id="unlike-{{post.id}}" onclick="unlike('{{post.id}}','{{user.id}}')" class="btn btn-dark">Unlike</button>
+        {% endif %}
+        
+
+    </div>
+
+    {% if user == post.username%}
+    <div class="editdiv2" id="editdiv2-{{post.id}}">
+        <a id="userprofile" href="{% url 'profile' username=post.username.username %}">{{post.username}}</a>
+        <form onsubmit="updatepost(event,'{{post.id}}','{{ csrf_token }}')" id="form2">
+            {% csrf_token %}
+            <textarea rows="4" cols="180" name="editpostcontent" placeholder="Edit Post Content"></textarea>
+            <input value="Save" type="submit" class="btn btn-primary">
+        </form>
+        <h4>{{post.submissiontime}}</h4>
+        <h4> &#10084 {{post.likecount}}</h4>
+
+    </div>
+    {% endif %}
+
+    {% endfor %}
+
+    <nav aria-label="Page navigation example" style="display: flex; justify-content: center;">
+        <ul class="pagination">
+        {% if posts.has_previous %}
+          <li class="page-item"><a class="page-link" href="?page={{posts.previous_page_number}}">Previous</a></li>
+        {% endif %}
+
+        {% if posts.has_next %}
+          <li class="page-item"><a class="page-link" href="?page={{posts.next_page_number}}">Next</a></li>
+        {% endif %}
+        </ul>
+    </nav>
+    
+{% endblock %}

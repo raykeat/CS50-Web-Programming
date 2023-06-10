@@ -1,0 +1,79 @@
+
+#div1,.editdiv2 {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    border:2px solid aqua;
+    border-radius:5px;
+    padding: 20px;
+    margin:10px;
+  }
+
+
+  
+  #form1 {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px; 
+  }
+  
+  #form1 textarea {
+    width: 100%;
+  }
+  
+  #form1 input[type="submit"] {
+    align-self: flex-start;
+  }
+
+  h1,h2{
+    margin-left: 10px;
+  }
+
+  h2{
+    color: darkcyan;
+  }
+
+  h4{
+    font-weight:normal;
+  }
+
+  #editpage{
+    color:rgb(18, 18, 184);
+    font-size: 20px;
+    text-decoration:none;
+  }
+
+  #editpage:hover {
+    color:rgb(1, 1, 18);
+    text-decoration: underline;
+}
+
+#userprofile{
+  color: black;
+  font-size: 25px;
+}
+
+.editdiv2{
+  display:none;
+}
+
+
+
+#follow,#unfollow{
+  margin-left: 20px;
+}
+
+#followmessage,#unfollowmessage{
+  display: none;
+}
+
+
+
+
+
+
+
+
+
+  
