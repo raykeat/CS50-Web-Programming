@@ -1,0 +1,1 @@
+This project is a watered down and simpler version of a netflixclone.

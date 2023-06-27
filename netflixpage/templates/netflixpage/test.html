@@ -1,0 +1,94 @@
+import * as React from 'react';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import CardMedia from '@mui/material/CardMedia';
+import Typography from '@mui/material/Typography';
+import { CardActionArea } from '@mui/material';
+
+function ActionAreaCard() {
+  return (
+    <Card sx={{ maxWidth: 345 }}>
+      <CardActionArea>
+        <CardMedia
+          component="img"
+          height="140"
+          image="/static/images/cards/contemplative-reptile.jpg"
+          alt="green iguana"
+        />
+        <CardContent>
+          <Typography gutterBottom variant="h5" component="div">
+            Lizard
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Lizards are a widespread group of squamate reptiles, with over 6,000
+            species, ranging across all continents except Antarctica
+          </Typography>
+        </CardContent>
+      </CardActionArea>
+    </Card>
+  );
+}
+
+function Div(){
+
+    const [animation1Visible, setAnimation1Visible] = React.useState(false);
+    const [animation2Visible, setAnimation2Visible] = React.useState(false);
+
+    React.useEffect(() => {
+    const observerOptions = {
+        root: null, // Use the viewport as the root element
+        threshold: 0.2, // Set the threshold for when the element is considered visible
+    };
+
+    // Create a new Intersection Observer
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+            // Set the corresponding state to trigger the animation
+            if (entry.target.id === "div1") {
+            setAnimation1Visible(true);
+            } else if (entry.target.id === "div2") {
+            setAnimation2Visible(true);
+            }
+        }
+        });
+    }, observerOptions);
+
+    // Observe the target elements
+    observer.observe(document.getElementById("div1"));
+    observer.observe(document.getElementById("div2"));
+
+    // Clean up the observer when the component is unmounted
+    return () => {
+        observer.disconnect();
+    };
+    }, []);
+
+    return (
+        <div>
+        <div id="div1" className= "container mx-auto px-4 py-8 flex">
+            <div>
+                <h1 className="Enjoytv-h1">Enjoy on your TV</h1>
+                <h4>Watch on smart TVs, PlayStation, Xbox, Chromecast, Apple TV, Blu-ray players and more.</h4>
+            </div>
+            <div>
+                <img className={`${animation1Visible ? "animate-growimage" : ""}`} id="image2" height = "600" width = "600" src="{% static 'netflixpage/Screenshot (625).png' %}"></img>
+            </div>
+            
+        </div>
+
+        
+        <div id="div2" className= "container mx-auto px-4 py-8 flex">
+            <div>
+                <img className={`${animation2Visible ? "animate-growimage" : ""}`} id="image2" height = "600" width = "600" src="{% static 'netflixpage/Screenshot (629).png' %}"></img>
+            </div>
+            <div>
+                <h1 className="Enjoytv-h1">Watch Everywhere</h1>
+                <h4>Stream unlimited films and TV programmes on your phone, tablet, laptop and TV.</h4>
+            </div>
+        </div>
+        </div>
+    )}
+
+
+    
