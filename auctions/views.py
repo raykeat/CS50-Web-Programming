@@ -107,6 +107,12 @@ def specificlisting(request,id):
     #showing comments
     products = CommentsAuctions.objects.filter(product=listing)
     comments = [comment.comments for comment in products]
+
+    #checking if listing is in watchlist
+    try:
+        added_to_watchlist = True if listing in request.user.watchlist_objects.all() else False
+    except:
+        added_to_watchlist = False
     
     return render(request,"auctions/specificlisting.html",{
         "listing":listing,
@@ -114,7 +120,8 @@ def specificlisting(request,id):
         "message":message,
         "auction_ended":auction_ended,
         "currentprice":highestbid,
-        "comments":comments
+        "comments":comments,
+        "added_to_watchlist":added_to_watchlist
     })
 
 #allows user to bid for an auction product
@@ -132,9 +139,15 @@ def bid(request):
         else:
             currentprice = bidproduct.startingbid
 
-        #showing comments
-        products = CommentsAuctions.objects.filter(product=bidproduct)
-        comments = [comment.comments for comment in products]
+        #showing list of comments for a product
+        try:
+            object = CommentsAuctions.objects.get(product=bidproduct)
+            if object.commentcount == 1:
+                comments = [object.comments]
+            else:
+                comments = object.comments.split(", ")
+        except:
+            comments = []
 
         #if bid price is less than starting bid
         if bidprice<int(bidproduct.startingbid):
@@ -193,9 +206,18 @@ def closeauction(request):
     product.highest_bid = highestbid
     product.save()
 
-    #showing comments
-    products = CommentsAuctions.objects.filter(product=product)
-    comments = [comment.comments for comment in products]
+    #checking if listing is in watchlist
+    added_to_watchlist = True if product in request.user.watchlist_objects.all() else False
+
+    #showing list of comments for a product
+    try:
+        object = CommentsAuctions.objects.get(product=product)
+        if object.commentcount == 1:
+            comments = [object.comments]
+        else:
+            comments = object.comments.split(", ")
+    except:
+        comments = []
 
     #generating message about auction bids for that product
     if product.is_closed:
@@ -207,7 +229,8 @@ def closeauction(request):
         "message":message,
         "auction_ended":auction_ended,
         "listing":product,
-        "comments":comments
+        "comments":comments,
+        "added_to_watchlist":added_to_watchlist
     })
 
 @login_required
@@ -216,14 +239,25 @@ def addcomment(request):
     producttitle = request.POST['listing']
     product = AuctionsListings.objects.get(title=producttitle)
     
-    #initializing an instance of CommentsAuctions class
-    commentobject = CommentsAuctions(comments=comment)
-    commentobject.product.add(product)
-    commentobject.save()
+    #check if CommentsAuctions object for this product has been created,
+    #otherwise initialize an instance of CommentsAuctions class
+    commentobject = CommentsAuctions.objects.filter(product=product).first()
+    if commentobject:
+        updatedcomments = commentobject.comments + f", {comment}"
+        commentobject.comments = updatedcomments
+        commentobject.commentcount+=1
+        commentobject.save()
+    
+    else:
+        CommentsAuctions.objects.create(product=product,comments=comment,commentcount=1)
+    
 
     #showing list of comments for a product
-    products = CommentsAuctions.objects.filter(product=product)
-    comments = [comment.comments for comment in products]
+    object = CommentsAuctions.objects.get(product=product)
+    if object.commentcount == 1:
+        comments = [object.comments]
+    else:
+        comments = object.comments.split(", ")
 
     #generating message about auction bids for that product
     if product.is_closed:
@@ -237,17 +271,26 @@ def addcomment(request):
     })
 
 @login_required
-def watchlist(request):
+def addwatchlist(request):
     if request.method == "POST":
         producttitle = request.POST['listing']
         product = AuctionsListings.objects.get(title=producttitle)
-        product.addedtowatchlist = True
-        product.watchlist_adder = request.user.username
-        product.save()
+        request.user.watchlist_objects.add(product)
+        request.user.save()
 
         #showing list of comments for a product
-        products = CommentsAuctions.objects.filter(product=product)
-        comments = [comment.comments for comment in products]
+        try:
+            object = CommentsAuctions.objects.get(product=product)
+            if object.commentcount == 1:
+                comments = [object.comments]
+            else:
+                comments = object.comments.split(", ")
+        except:
+            comments = []
+
+
+        #checking if listing is in watchlist
+        added_to_watchlist = True if product in request.user.watchlist_objects.all() else False
 
         #generating message about auction bids for that product
         if product.is_closed:
@@ -258,16 +301,51 @@ def watchlist(request):
         return render(request,"auctions/specificlisting.html",{
             "comments":comments,
             "listing":product,
-            "message":message
+            "message":message,
+            "added_to_watchlist":added_to_watchlist
         })
 
     #if request.method =="GET"
     else:
-        products = AuctionsListings.objects.filter(addedtowatchlist = True, watchlist_adder = request.user)
-        listofproducts = list(products)
+        listofproducts = [product for product in request.user.watchlist_objects.all()]
         return render(request,"auctions/watchlist.html",{
             "listofproducts":listofproducts
         })
+
+@login_required
+def removewatchlist(request):
+    if request.method == "POST":
+        producttitle = request.POST['listing']
+        product = AuctionsListings.objects.get(title=producttitle)
+        request.user.watchlist_objects.remove(product)
+        request.user.save()
+
+        #showing list of comments for a product
+        try:
+            object = CommentsAuctions.objects.get(product=product)
+            if object.commentcount == 1:
+                comments = [object.comments]
+            else:
+                comments = object.comments.split(", ")
+        except:
+            comments = []
+
+        #checking if listing is in watchlist
+        added_to_watchlist = True if product in request.user.watchlist_objects.all() else False
+
+        #generating message about auction bids for that product
+        if product.is_closed:
+            message = f"Auction for {producttitle} has closed and {producttitle} is sold to ${product.highest_bidder} at {product.highest_bid}"
+        else:
+            message = f"{product.noofbids} bid(s) so far."
+
+        return render(request,"auctions/specificlisting.html",{
+            "comments":comments,
+            "listing":product,
+            "message":message,
+            "added_to_watchlist":added_to_watchlist
+        })
+
     
 #getting all the different categories
 def categorieslist(request):
