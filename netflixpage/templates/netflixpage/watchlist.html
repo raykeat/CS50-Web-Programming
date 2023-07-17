@@ -3,21 +3,35 @@
 
 {% block content %}
     <!--Watchlist content-->
-    <div>
-    <h1 class="text-4xl font-bold mb-4">My Watchlist!</h1>
-    {% if user.is_authenticated %}
-    <h8>Logged in as {{user.username}}</h8>
-    {% endif %}
+    <div id="top-section">
+        <h1 class="text-4xl font-bold mb-4">My Watchlist!</h1>
+        {% if user.is_authenticated %}
+        <h6>Logged in as {{user.username}}</h6>
+        {% endif %}
     </div>
 
-
-    <div id="app1" style="margin-bottom: 70px;"></div>
+    <div id="app1" class="container mx-auto px-4 py-8 flex-grow" style="margin-bottom: 70px;"></div>
     
     <script type="text/babel">
 
     //Movie Cards for movies in user's watchlist
-    function Moviecard3(){
+    function WatchlistMovieCards(){
             const [moviedata, setmoviedata] = React.useState([]);
+            const [IsAuthenticated, setIsAuthenticated] = React.useState(false);
+
+
+            React.useEffect(() => {
+                //fetch request to Django backend to check if user is logged in
+                fetch('/isloggedin/')
+                .then((response) => response.json())
+                .then((data) => {
+                    setIsAuthenticated(data.isLoggedIn);
+                })
+                .catch((error) => {
+                    console.error('Error checking login status: ', error);
+                });
+            },[]) //empty dependency array to prevent use effect from running infinitely lol
+
 
             React.useEffect(() => {
                 //fetch request to Django backend to retrieve watchlist movies
@@ -32,19 +46,19 @@
                 });
             },[]) //empty dependency array to prevent use effect from running infinitely lol
 
-            function closecard(movieid) {
+            function CloseCard(movieid) {
                 console.log(movieid);
                 document.getElementById(movieid).style.display = 'none';
                 document.getElementById(`overlay-${movieid}`).style.display = 'none';
             }
 
-            function showcard(movieid) {
+            function ShowCard(movieid) {
                 console.log(movieid);
                 document.getElementById(movieid).style.display = 'block';
                 document.getElementById(`overlay-${movieid}`).style.display = 'block';
             }
 
-            function getcookie() {
+            function GetCookie() {
                 const cookieValue = document.cookie
                 .split('; ')
                 .find(row => row.startsWith('csrftoken='))
@@ -53,9 +67,9 @@
             }
 
             //react function to update text displayed in like/unlike button after its been clicked
-            function handlelike(movieid,likebuttonmessage) {
-                const csrftoken = getcookie();
-                axios.post(`/like/${movieid}/${likebuttonmessage}/`,{},{
+            function HandleLike(movieid,likebuttonmessage, movieortv) {
+                const csrftoken = GetCookie();
+                axios.post(`/like/${movieid}/${likebuttonmessage}/${movieortv}/`,{},{
                     headers: {
                         'X-CSRFToken': csrftoken,
                     }
@@ -87,9 +101,9 @@
             }
 
             //react function to update watchlist button after its been clicked
-            function handle_watchlist(movieid,watchlist_message) {
-                const csrftoken = getcookie();
-                axios.post(`/watchlist/${movieid}/${watchlist_message}/`,{},{
+            function Handle_Watchlist(movieid,watchlist_message,movieortv) {
+                const csrftoken = GetCookie();
+                axios.post(`/watchlist/${movieid}/${watchlist_message}/${movieortv}/`,{},{
                     headers: {
                         'X-CSRFToken': csrftoken,
                     }
@@ -121,34 +135,82 @@
                 });
             }
 
+            //function to conditionally render the iframe
+            function Load_Iframe(movieid,iframe_message){
+                setmoviedata((prevData)=>{
+        
+                        const updatedmovies = prevData.map((movie)=>{
+
+                            //if movie is the movie for which we want to display iframe
+                            if (movie.movieid === movieid){
+                                //spread syntax { ...movie } copies all the properties 
+                                //of current movie object into a new movie object,
+                                //iframe_loaded:True sets it to True
+                                if (iframe_message === "View Movie Trailer"){
+                                    return {...movie, iframe_loaded: true, iframe_message: "Hide Movie Trailer" };
+                                } else{
+                                    return {...movie, iframe_loaded: false, iframe_message: "View Movie Trailer" };
+                                }
+                                
+                            } else{
+                                return movie;
+                            }
+                        })
+                        return updatedmovies;
+                    })
+                .catch((error) => {
+                    console.error('Error loading iframe: ', error);
+                });  
+            }
+
             return (
                 <div>
 
+                {IsAuthenticated?(
                 <div className="movie-card-container">
                 {moviedata.map((movie) => (
                     
                     <div className="movie-card"
-                    onMouseEnter={()=>showcard(movie.movieid)}
-                    onMouseLeave={()=>closecard(movie.movieid)}
+                    onMouseEnter={()=>ShowCard(movie.movieid)}
+                    onMouseLeave={()=>CloseCard(movie.movieid)}
                     >
 
                         <div className="movie-image">
-                            <img className="movie-image-img" height="200" width="250" src={movie.posterpath}></img>
+                            <img className="movie-image-img" src={movie.posterpath}></img>
                         </div>
 
                         
                         <div id={movie.movieid} className='movie-details'>
                             <div className="close-button-container">
                             {/* ()=>closecard(movie.movieid) creates a new function that calls closecard function when invoked*/}
-                            <button className="close-button" onClick={()=>closecard(movie.movieid)}>X</button>
+                            <button className="close-button" onClick={()=>CloseCard(movie.movieid)}>X</button>
                             </div>
 
-                            <img height="250" width="250" src={movie.posterpath}></img>
+                            <img src={movie.posterpath}></img>
 
-                            <a className={`likebutton-${movie.movieid}`} onClick={() => handlelike(movie.movieid, movie.liked_button_message)} class="btn btn-info btn-lg">
+                            <div className="iframe-button">
+                            <a id="iframemobile" onClick={(event) => {
+                                        //prevent event propagation to parent elements
+                                        event.stopPropagation(); 
+                                        Load_Iframe(movie.movieid, movie.iframe_message);
+                                    }} class="btn btn-info btn-lg">
+                                <span class="glyphicon glyphicon-thumbs-up"></span> {movie.iframe_message}
+                            </a>
+                            </div>
+
+                            {/*ternary operator that checks if iframe_loaded is True for that movie before displaying iframe*/}
+                            {movie.iframe_loaded?(
+                            <div className="iframecontainer">
+                            <iframe width="560" height="315" src={movie.embed_url} frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+                            </div>
+                            ):(
+                                <div></div>
+                            )}
+
+                            <a id="likemobile" className={`likebutton-${movie.movieid}`} onClick={() => HandleLike(movie.movieid, movie.liked_button_message, "movie")} class="btn btn-info btn-lg">
                                 <span class="glyphicon glyphicon-thumbs-up"></span> {movie.liked_button_message}
                             </a>
-                            <a className="watchlistbutton" onClick={() => handle_watchlist(movie.movieid, movie.watchlist_message)} class="btn btn-info btn-lg">
+                            <a id="watchlistmobile" className="watchlistbutton" onClick={() => Handle_Watchlist(movie.movieid, movie.watchlist_message, "movie")} class="btn btn-info btn-lg">
                                 <span class={`${movie.watchlist_class}`}></span> {movie.watchlist_message}
                             </a>
                             <h5>Title: {movie.title}</h5>
@@ -166,6 +228,7 @@
                     </div>
                 ))}
                 </div>
+                ):(<div></div>)}
                 </div>
             );
         }
@@ -174,7 +237,7 @@
         <div>
             
             <div>
-                <Moviecard3 />
+                <WatchlistMovieCards />
             </div>
         </div>
         ,document.querySelector('#app1'));
@@ -182,6 +245,33 @@
     </script>
 
     <style>
+        @media(max-width:647px){
+            .movie-details{
+                margin-top:110px;
+            }
+
+            #iframemobile, #watchlistmobile, #likemobile{
+                font-size: 8px;
+                height: 26px;
+            }
+            #moreinfo{
+                font-size: 12px;
+            }
+            h1{
+                font-size: 16px !important;
+            }
+            h6{
+                font-size: 12px;
+            }
+            .movie-details img {
+                width: calc(100vw* 180/647) !important;
+                height: calc(100vw* 160/647) !important;
+            }
+            h5,p {
+                font-size: 10px;
+            }
+        }
+
         .genre-category{
             color: white;
             margin-top: 50px;
@@ -197,10 +287,10 @@
         .movie-card {
         position: relative;
         flex: 0 0 auto;
-        width: 135px;
-        height: 225px;
-        margin-right: 10px;
-        margin-bottom: 30px;
+        width: calc(90vw * 1 / 7);
+        height: auto;
+        margin-right: calc(100vw* 1/130);
+        margin-bottom: calc(90vw * 1/40);
         cursor: pointer;
         }
 
@@ -210,7 +300,9 @@
         }
 
         .movie-image-img {
-            border-radius: 5px;
+            border-radius: 10px;
+            width: calc(90vw * 1 / 7);
+            height: auto;
         }
 
         .movie-card:hover .movie-details {
@@ -251,8 +343,8 @@
         }
 
         .movie-details img {
-        width: 400px;
-        height: 500px;
+        width: calc(100vw * 4 / 13);
+        height: calc(100vw * 4.5 / 13);
         margin-bottom: 10px;
         display: block; 
         margin-left: auto; 
@@ -269,6 +361,16 @@
         }
         .close-button{
             position:absolute;
+        }
+
+        .iframe-button{
+            display: flex;
+            justify-content: center;
+        }
+
+        .iframecontainer{
+            display: flex;
+            justify-content: center;
         }
 
     </style>

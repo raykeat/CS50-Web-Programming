@@ -3,14 +3,16 @@
 {% load static %}
 
 {% block content %}
-    <!--Home page content-->
-    <div>
-    <h1 class="text-4xl font-bold mb-4">Welcome to Netflix Clone!</h1>
-    {% if user.is_authenticated %}
-    <h8>Logged in as {{user.username}}</h8>
-    {% endif %}
+
+    <!--Home page (Movies) content-->
+    <div id="top-section">
+        <h1 class="text-4xl font-bold mb-4">{{message}}</h1>
+        {% if user.is_authenticated %}
+        <h6 class="mb-4">Logged in as {{user.username}}</h6>
+        {% endif %}
     </div>
     
+    {% if not user.is_authenticated %}
     <!--Unlimited Films, TV Programs and More first section-->
     <div id="div1" class="relative mx-auto mb-4">
         <img class="rounded-lg opacity-50" height="700" width="1100" src="{% static 'netflixpage/netflix-reuse-official.jpg' %}">
@@ -23,8 +25,15 @@
         </form>
     </div>
 
+    {% endif %}
 
+    <!--Main Iframe-->
+    <div class="container mx-auto px-4 flex-grow" id="mainiframe"></div>
+
+    <!--Movie Cards-->
+    <div class="container mx-auto px-4 flex-grow">
     <div id="app"></div>
+    </div>
     
 
     <script type="text/babel">
@@ -34,6 +43,22 @@
 
         const [animation1Visible, setAnimation1Visible] = React.useState(false);
         const [animation2Visible, setAnimation2Visible] = React.useState(false);
+        const [IsAuthenticated, setIsAuthenticated] = React.useState(false);
+
+        //check if user is logged in
+        React.useEffect(()=>{
+            //fetch request to Django backend to check if user is logged in
+            fetch('/isloggedin/')
+                .then((response) => response.json())
+                .then((data) => {
+                    setIsAuthenticated(data.isLoggedIn);
+                })
+                .catch((error) => {
+                    console.error('Error checking login status: ', error);
+                });
+            },[]) //empty dependency array to prevent use effect from running infinitely lol
+
+        
 
         React.useEffect(() => {
         const observerOptions = {
@@ -67,6 +92,11 @@
 
         return (
             <div>
+            {IsAuthenticated?(
+                <div> </div>
+            ):(
+
+            <div>
             <div id="div1" className= "container mx-auto px-4 py-8 flex">
                 <div>
                     <h1 className="Enjoytv-h1">Enjoy on your TV</h1>
@@ -88,10 +118,155 @@
                 </div>
             </div>
             </div>
+            )}
+            </div>
         )}
 
+
+        //To display iframe at top of screen
+        function MainMovieCard(props){
+
+            const type = props.type;
+            const [MovieData,setMovieData] = React.useState({});
+            const [IsAuthenticated, setIsAuthenticated] = React.useState(false);
+            
+            React.useEffect(() => {
+                //fetch request to Django backend to check if user is logged in
+                fetch('/isloggedin/')
+                .then((response) => response.json())
+                .then((data) => {
+                    setIsAuthenticated(data.isLoggedIn);
+                })
+                .catch((error) => {
+                    console.error('Error checking login status: ', error);
+                });
+            },[])
+                
+            React.useEffect(() => {
+                //fetch request to Django backend to check if user is logged in
+                fetch(`/mainmovie/${type}/`)
+                .then((response) => response.json())
+                .then((data) => {
+                    setMovieData(data);
+                    console.log(data);
+                })
+                .catch((error) => {
+                    console.error('Error retrieving main movie iframe: ', error);
+                });
+            },[])
+
+            function CloseCard(movieid) {
+                document.getElementById(movieid).style.display = 'none';
+                document.getElementById(`overlay-${movieid}`).style.display = 'none';
+            }
+
+            function ShowCard(movieid) {
+                document.getElementById(movieid).style.display = 'block';
+                document.getElementById(`overlay-${movieid}`).style.display = 'block';
+                
+            }
+
+            function GetCookie() {
+                const cookieValue = document.cookie
+                .split('; ')
+                .find(row => row.startsWith('csrftoken='))
+                .split('=')[1];
+                return cookieValue;
+            }
+
+            //react function to update text displayed in like/unlike button after its been clicked
+            function HandleLike(movieid,likebuttonmessage,movieortv) {
+                const csrftoken = GetCookie();
+                axios.post(`/like/${movieid}/${likebuttonmessage}/${movieortv}/`,{},{
+                    headers: {
+                        'X-CSRFToken': csrftoken,
+                    }
+                })
+                .then((response) => {
+                    //document.queryselector is not recommended to update text content of button,
+                    //instead should update state of movie data array
+                    const updatedmessage = response.data.liked_message
+
+                    setMovieData((prevData) =>({
+                        ...prevData, liked_button_message: updatedmessage
+                    }));
+                })
+                .catch((error) => {
+                    console.error('Error liking movie: ', error);
+                });
+            }
+
+            //react function to update watchlist button after its been clicked
+            function Handle_Watchlist(movieid,watchlist_message,movieortv) {
+                const csrftoken = GetCookie();
+                axios.post(`/watchlist/${movieid}/${watchlist_message}/${movieortv}/`,{},{
+                    headers: {
+                        'X-CSRFToken': csrftoken,
+                    }
+                })
+                .then((response) => {
+                    //document.queryselector is not recommended to update text content of button,
+                    //instead should update state of movie data array
+                    const updatedmessage = response.data.watchlist_message;
+                    const updatedclass = response.data.watchlist_class;
+
+                    setMovieData((prevData)=>({
+                        ...prevData, watchlist_message: updatedmessage, watchlist_class: updatedclass 
+                    }));
+                
+                })
+                .catch((error) => {
+                    console.error('Error updating watchlist: ', error);
+                });
+            }
+
+            return(
+                <div>
+                
+                {IsAuthenticated?(
+                <div className="main-movie-card">
+
+                        <div > 
+                            <iframe class= "container mx-auto py-8" className="responsive-iframe" src={MovieData.embed_url} frameborder="0" allow="autoplay; encrypted-media" allowfullscreen autoplay></iframe>
+                        </div>
+
+                        <div className="text-center">
+                        <button id="moreinfo" className="btn btn-info btn-xl" onClick={()=>ShowCard(MovieData.movieid)}> More Info </button>
+                        </div>
+                        
+                        <div id={MovieData.movieid} className='movie-details'>
+                            <div className="close-button-container">
+                            {/* ()=>closecard(movie.movieid) creates a new function that calls closecard function when invoked*/}
+                            <button className="close-button" onClick={()=>CloseCard(MovieData.movieid)}>X</button>
+                            </div>
+
+                            <img height="250" width="250" src={MovieData.posterpath}></img>
+                            
+                            <a class="btn btn-info btn-lg" className={`likebutton-${MovieData.movieid}`} onClick={() => HandleLike(MovieData.movieid, MovieData.liked_button_message, "movie")}>
+                                <span class="glyphicon glyphicon-thumbs-up"></span> {MovieData.liked_button_message}
+                            </a>
+                            <a className="watchlistbutton" onClick={() => Handle_Watchlist(MovieData.movieid, MovieData.watchlist_message, "movie")}>
+                                <span class={`${MovieData.watchlist_class}`}></span> {MovieData.watchlist_message}
+                            </a>
+                            <h5>Title: {MovieData.title}</h5>
+                            <h5>Movie ID: {MovieData.movieid}</h5>
+                            <h5>Rating: {MovieData.rating}</h5>
+                            <h5>Release date: {MovieData.releasedate}</h5>
+                            <h5>Genres: {MovieData.genres}</h5>
+                            <p>Summary: {MovieData.overview}</p>
+                        </div>
+                        
+                        {/*to add effect of darkening other areas of screen when movie details of a movie is shown*/}
+                        <div id={`overlay-${MovieData.movieid}`} className = "movie-details-overlay"></div>
+                    
+                </div>
+                ):(<div></div>)}
+                </div>
+            )
+        }
+
         //not included in actual CS50 Project submission
-        function Moviecard(){
+        function MovieCard(){
 
             const [hoveranimation, sethoveranimation] = React.useState(null);
 
@@ -142,36 +317,62 @@
             )
         }
 
-        //Movie Cards with real time movie data Fourth Section (horror)
-        function Moviecard2(){
+
+        //Movie Cards Reusable component that fetches real time movie data based on genreid
+        //In React, 'props' keyword must be used as argument to access the props passed to the functional component
+        function MovieCardComponent(props){
+            //accessing props
+            const genreid = props.genreid;
+            const genrename = props.genrename;
+
+            const [IsAuthenticated, setIsAuthenticated] = React.useState(false);
             const [moviedata, setmoviedata] = React.useState([]);
+            const [showDetailsTimeout, setShowDetailsTimeout] = React.useState(null);
 
             React.useEffect(() => {
+                //fetch request to Django backend to check if user is logged in
+                fetch('/isloggedin/')
+                .then((response) => response.json())
+                .then((data) => {
+                    setIsAuthenticated(data.isLoggedIn);
+                })
+                .catch((error) => {
+                    console.error('Error checking login status: ', error);
+                });
+            },[]) //empty dependency array to prevent use effect from running infinitely lol
+            
+            React.useEffect(() => {
                 //fetch request to Django backend to dynamically retrieve real time movie data
-                fetch('/retrievemovie/homepage/')
+                fetch(`/retrievemovie/homepage/${genreid}/${genrename}/`)
                 .then((response) => response.json())
                 .then((data) => {
                     setmoviedata(data);
                     console.log(data);
+                    console.log(moviedata);
                 })
                 .catch((error) => {
                     console.error('Error fetching movie data: ', error);
                 });
             },[]) //empty dependency array to prevent use effect from running infinitely lol
 
-            function closecard(movieid) {
-                console.log(movieid);
+        
+            function CloseCard(movieid) {
+                clearTimeout(showDetailsTimeout);
                 document.getElementById(movieid).style.display = 'none';
                 document.getElementById(`overlay-${movieid}`).style.display = 'none';
             }
-
-            function showcard(movieid) {
-                console.log(movieid);
-                document.getElementById(movieid).style.display = 'block';
-                document.getElementById(`overlay-${movieid}`).style.display = 'block';
+            //only shows the movie card details after hovering for a second
+            function ShowCard(movieid) {
+                clearTimeout(showDetailsTimeout);
+                setShowDetailsTimeout(
+                setTimeout(() => {
+                    document.getElementById(movieid).style.display = 'block';
+                    document.getElementById(`overlay-${movieid}`).style.display = 'block';
+                }, 1000)
+                );
             }
 
-            function getcookie() {
+            function GetCookie() {
                 const cookieValue = document.cookie
                 .split('; ')
                 .find(row => row.startsWith('csrftoken='))
@@ -180,9 +381,9 @@
             }
 
             //react function to update text displayed in like/unlike button after its been clicked
-            function handlelike(movieid,likebuttonmessage) {
-                const csrftoken = getcookie();
-                axios.post(`/like/${movieid}/${likebuttonmessage}/`,{},{
+            function HandleLike(movieid,likebuttonmessage,movieortv) {
+                const csrftoken = GetCookie();
+                axios.post(`/like/${movieid}/${likebuttonmessage}/${movieortv}/`,{},{
                     headers: {
                         'X-CSRFToken': csrftoken,
                     }
@@ -214,9 +415,9 @@
             }
 
             //react function to update watchlist button after its been clicked
-            function handle_watchlist(movieid,watchlist_message) {
-                const csrftoken = getcookie();
-                axios.post(`/watchlist/${movieid}/${watchlist_message}/`,{},{
+            function Handle_Watchlist(movieid,watchlist_message,movieortv) {
+                const csrftoken = GetCookie();
+                axios.post(`/watchlist/${movieid}/${watchlist_message}/${movieortv}/`,{},{
                     headers: {
                         'X-CSRFToken': csrftoken,
                     }
@@ -248,36 +449,83 @@
                 });
             }
 
+            //function to conditionally render the iframe
+            function Load_Iframe(movieid,iframe_message){
+                setmoviedata((prevData)=>{
+        
+                        const updatedmovies = prevData.map((movie)=>{
+
+                            //if movie is the movie for which we want to display iframe
+                            if (movie.movieid === movieid){
+                                //spread syntax { ...movie } copies all the properties 
+                                //of current movie object into a new movie object,
+                                //iframe_loaded:True sets it to True
+                                if (iframe_message === "View Movie Trailer"){
+                                    return {...movie, iframe_loaded: true, iframe_message: "Hide Movie Trailer" };
+                                } else{
+                                    return {...movie, iframe_loaded: false, iframe_message: "View Movie Trailer" };
+                                }
+                                
+                            } else{
+                                return movie;
+                            }
+                        })
+                        return updatedmovies;
+                    })
+                .catch((error) => {
+                    console.error('Error loading iframe: ', error);
+                });  
+            }
+            
             return (
                 <div>
-                <h4 className="genre-category">Horror Films</h4>
+                
+                {IsAuthenticated?(
+                <div>
+                <h4 className="genre-category">{genrename} Films</h4>
 
                 <div className="movie-card-container">
                 {moviedata.map((movie) => (
                     
                     <div className="movie-card"
-                    onMouseEnter={()=>showcard(movie.movieid)}
-                    onMouseLeave={()=>closecard(movie.movieid)}
+                    onMouseEnter={()=>ShowCard(movie.movieid)}
+                    onMouseLeave={()=>CloseCard(movie.movieid)}
                     >
 
                         <div className="movie-image">
-                            <img className="movie-image-img" height="200" width="250" src={movie.posterpath}></img>
+                            <img className="movie-image-img" src={movie.posterpath}></img>
                         </div>
 
                         
                         <div id={movie.movieid} className='movie-details'>
                             <div className="close-button-container">
                             {/* ()=>closecard(movie.movieid) creates a new function that calls closecard function when invoked*/}
-                            <button className="close-button" onClick={()=>closecard(movie.movieid)}>X</button>
+                            <button className="close-button" onClick={()=>CloseCard(movie.movieid)}>X</button>
                             </div>
 
-                            <img height="250" width="250" src={movie.posterpath}></img>
-                            <iframe width="560" height="315" src={movie.embed_url} frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+                            <img src={movie.posterpath}></img>
+                            
+                            <div className="iframe-button">
+                            <a id="iframemobile" onClick={(event) => {
+                                        //prevent event propagation to parent elements
+                                        event.stopPropagation(); 
+                                        Load_Iframe(movie.movieid, movie.iframe_message);
+                                    }} class="btn btn-info btn-lg">
+                                <span class="glyphicon glyphicon-thumbs-up"></span> {movie.iframe_message}
+                            </a>
+                            </div>
 
-                            <a className={`likebutton-${movie.movieid}`} onClick={() => handlelike(movie.movieid, movie.liked_button_message)} class="btn btn-info btn-lg">
+                            {/*ternary operator that checks if iframe_loaded is True for that movie before displaying iframe*/}
+                            {movie.iframe_loaded?(
+                            <iframe width="560" height="315" src={movie.embed_url} frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+                            ):(
+                                <div></div>
+                            )}
+
+                            <a id="likemobile" className={`likebutton-${movie.movieid}`} onClick={() => HandleLike(movie.movieid, movie.liked_button_message, "movie")} class="btn btn-info btn-lg">
                                 <span class="glyphicon glyphicon-thumbs-up"></span> {movie.liked_button_message}
                             </a>
-                            <a className="watchlistbutton" onClick={() => handle_watchlist(movie.movieid, movie.watchlist_message)} class="btn btn-info btn-lg">
+                            <a id="watchlistmobile" className="watchlistbutton" onClick={() => Handle_Watchlist(movie.movieid, movie.watchlist_message, "movie")} class="btn btn-info btn-lg">
                                 <span class={`${movie.watchlist_class}`}></span> {movie.watchlist_message}
                             </a>
                             <h5>Title: {movie.title}</h5>
@@ -296,21 +544,141 @@
                 ))}
                 </div>
                 </div>
+                ):(
+                    <div></div>
+                )}
+
+                </div>
             );
         }
-        
+
+        function MainIframe(){
+            return <MainMovieCard type="movie" />
+        }
+
+        //Horror Movie Cards Component
+        //HorrorMovieCards is a parent component of MovieCardComponent (child component)
+        //and props are passed to the child component here
+        function HorrorMovieCards(){
+            return <MovieCardComponent genreid="27" genrename="Horror"  />
+        }
+
+        //Action Movie Cards Component
+        function ActionMovieCards(){
+            return <MovieCardComponent genreid="28" genrename="Action"  />
+        }
+
+        //Romance Movie Cards Component
+        function RomanceMovieCards(){
+            return <MovieCardComponent genreid="10749" genrename="Romance"  />
+        }
+
+        //Crime Movie Cards Component
+        function CrimeMovieCards(){
+            return <MovieCardComponent genreid="80" genrename="Crime"  />
+        }
+
+        //Comedy Movie Cards Component
+        function ComedyMovieCards(){
+            return <MovieCardComponent genreid="35" genrename="Comedy"  />
+        }
+
+        //Family Movie Cards Component
+        function FamilyMovieCards(){
+            return <MovieCardComponent genreid="10751" genrename="Family"  />
+        }
+
+        //Drama Movie Cards Component
+        function DramaMovieCards(){
+            return <MovieCardComponent genreid="18" genrename="Drama"  />
+        }
+
+        //Thriller Movie Cards Component
+        function ThrillerMovieCards(){
+            return <MovieCardComponent genreid="53" genrename="Thriller"  />
+        }
+
+        //Western Movie Cards Component
+        function WesternMovieCards(){
+            return <MovieCardComponent genreid="37" genrename="Western"  />
+        }
+
+        //Science Fiction Movie Cards Component
+        function ScifiMovieCards(){
+            return <MovieCardComponent genreid="878" genrename="Science Fiction"  />
+        }
+
+        //War Movie Cards Component
+        function WarMovieCards(){
+            return <MovieCardComponent genreid="10752" genrename="War"  />
+        }
+
+        //Fantasy Movie Cards Component
+        function FantasyMovieCards(){
+            return <MovieCardComponent genreid="14" genrename="Fantasy"  />
+        }
+
+        //Mystery Movie Cards Component
+        function MysteryMovieCards(){
+            return <MovieCardComponent genreid="9648" genrename="Mystery"  />
+        }
+
+        ReactDOM.render(
+            <div>
+                <div>
+                    <Div />
+                </div>
+                <div>
+                    <MainIframe />
+                </div>
+            </div>
+        ,document.querySelector('#mainiframe'));
+
         
         ReactDOM.render(
         <div>
             <div>
-                <Div />
+                <HorrorMovieCards />
             </div>
             <div>
-                <Moviecard />
+                <ActionMovieCards />
             </div>
             <div>
-                <Moviecard2 />
+                <RomanceMovieCards />
             </div>
+            <div>
+                <CrimeMovieCards />
+            </div>
+            <div>
+                <ComedyMovieCards />
+            </div>
+            <div>
+                <FamilyMovieCards />
+            </div>
+            <div>
+                <DramaMovieCards />
+            </div>
+            <div>
+                <ThrillerMovieCards />
+            </div>
+            <div>
+                <WesternMovieCards />
+            </div>
+            <div>
+                <ScifiMovieCards />
+            </div>
+            <div>
+                <WarMovieCards />
+            </div>
+            <div>
+                <FantasyMovieCards />
+            </div>
+            <div>
+                <MysteryMovieCards />
+            </div>
+            
+            
+            
         </div>
         ,document.querySelector('#app'));
     
@@ -323,36 +691,64 @@
 
     
     <style>
-        /*CSS for Movie Cards with real time movie data Fourth Section*/
+
+        body{
+            background-color: rgb(24, 23, 23);
+        }
+
+        .responsive-iframe {
+            position: relative;
+            width: 100%;
+            height: calc(90vw * 7 / 16); /*16:7 aspect ratio*/
+        }
+
+
+        /*CSS for Dynamic Movie Cards with real time movie data Fourth Section*/
         .genre-category{
             color: white;
-            margin-top: 50px;
+            margin-top: 25px;
             margin-bottom: 10px;
         }
 
+
         .movie-card-container {
-        display: flex;
-        flex-wrap: nowrap;
-        overflow-x: scroll;
-        justify-content: flex-start;
+            display: flex !important;
+            flex-direction: row !important; /*Align items horizontally*/
+            align-items: center !important;
+            flex-wrap: nowrap !important;
+            overflow-x: scroll;
+            justify-content: flex-start;
+            margin: 0 auto; 
+        }
+
+        
+        .movie-image-img {
+            border-radius: 5px;
+            width: calc(90vw * 1 / 8);
+            height: calc(90vw * 1.5 / 8);
         }
 
         .movie-card {
         position: relative;
         flex: 0 0 auto;
-        width: 135px;
-        height: 225px;
-        margin-right: 10px;
+        width: calc(90vw * 1 / 7);
+        height: auto;
+        margin-right: calc(100vw* 1/500);
         cursor: pointer;
+        margin-bottom: calc(90vw * 1/40);
+        }
+
+        .main-movie-card{
+            margin-bottom: 50px;
+        }
+
+        #moreinfo{
+            font-size:20px;
         }
 
         .movie-image {
         position: relative;
         border-radius: 30px;
-        }
-
-        .movie-image-img {
-            border-radius: 5px;
         }
 
         .movie-card:hover .movie-details {
@@ -362,6 +758,7 @@
         .movie-card:hover .movie-details-overlay{
             display:block;
         }
+
 
         .movie-details-overlay {
         position: fixed;
@@ -374,27 +771,52 @@
         display: none;
         }
 
+
+        @media(max-width:647px){
+            .movie-details{
+                margin-top:110px;
+            }
+
+            #iframemobile, #watchlistmobile, #likemobile{
+                font-size: 8px;
+                height: 26px;
+            }
+            #moreinfo{
+                font-size: 12px;
+            }
+            h1{
+                font-size: 16px !important;
+            }
+            h6{
+                font-size: 12px;
+            }
+            .movie-details img {
+                width: calc(100vw* 180/647) !important;
+                height: calc(100vw* 160/647) !important;
+            }
+            h5,p {
+                font-size: 10px;
+            }
+        }
+
         .movie-details {
         position: fixed;
         top: 57%;
         left: 50%;
         transform: translate(-50%, -50%);
         width: 80%;
-        max-width: 800px;
         height: 80%;
-        max-height: 600px;
         background-color: #201f1f;
         color: white;
         padding: 20px;
         z-index: 9999;
-        display: none;
-        overflow: auto;
+        overflow-y: auto !important;
         border-radius: 30px;
         }
 
         .movie-details img {
-        width: 400px;
-        height: 500px;
+        width: calc(100vw * 4 / 13);
+        height: calc(100vw * 4.5 / 13);
         margin-bottom: 10px;
         display: block; 
         margin-left: auto; 
@@ -415,6 +837,11 @@
 
         .watchlistbutton{
             margin: 30px;
+        }
+
+        .iframe-button{
+            display: flex;
+            justify-content: center;
         }
 
         
